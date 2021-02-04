@@ -24,5 +24,6 @@
     "eslint": "^4.10.0"
   },
   "license": "MIT",
-  "private": false
+  "private": false,
+  "keywords":["oecloud","app-list-module"]
 }
