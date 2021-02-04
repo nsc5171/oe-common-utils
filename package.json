@@ -1,7 +1,7 @@
 {
-  "name": "@nsaichandra/oe-common-customizations",
-  "version": "0.0.1",
-  "description": "A well defined useful set of customizations on oe-apps packed as a pluggable module.",
+  "name": "@nsaichandra/oe-common-utils",
+  "version": "0.0.1-alpha",
+  "description": "A well defined useful set of utils on oe-apps packed as a pluggable app-module.",
   "author": "Sai Chandra Nandana",
   "engines": {
     "node": ">=6"
