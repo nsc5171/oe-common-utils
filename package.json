@@ -1,8 +1,8 @@
 {
-  "name": "oe-cloud-2.x",
-  "version": "1.0.0",
-  "description": "Oe cloud 2x application",
-  "author": "sumeet",
+  "name": "oe-common-customizations",
+  "version": "0.0.1-beta",
+  "description": "A well defined useful set of customizations on oe-apps packed as a pluggable module.",
+  "author": "Sai Chandra Nandana",
   "engines": {
     "node": ">=6"
   },
