@@ -4,6 +4,11 @@
     "enabled": true
   },
   {
+    "path": "oe-migration",
+    "autoEnableMixins": true,
+    "enabled": true
+  },
+  {
     "path": "./",
     "enabled": true
   }
