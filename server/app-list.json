@@ -1,0 +1,10 @@
+[
+  {
+    "path": "oe-cloud",
+    "enabled": true
+  },
+  {
+    "path": "./",
+    "enabled": true
+  }
+]

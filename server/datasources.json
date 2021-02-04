@@ -1,0 +1,11 @@
+{
+  "db": {
+    "host": "localhost",
+    "port": 27017,
+    "url": "mongodb://localhost:27017/oe-sai-org-app-customization",
+    "database": "oe-sai-org-app-customization",
+    "name": "db",
+    "connector": "oe-connector-mongodb",
+    "connectionTimeout": 50000
+  }
+}
