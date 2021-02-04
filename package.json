@@ -6,7 +6,7 @@
   "engines": {
     "node": ">=6"
   },
-  "main": "server/server.js",
+  "main": "index.js",
   "scripts": {
     "lint": "eslint .",
     "fix-lint": "eslint --fix ."

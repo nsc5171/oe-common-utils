@@ -6,7 +6,7 @@ const fs = require('fs');
 let serverFolderPath = process.argv[2];
 try {
     if (typeof serverFolderPath !== 'string' || !fs.statSync(serverFolderPath).isDirectory()) {
-        serverFolderPath = path.resolve('../../../server');
+        serverFolderPath = path.resolve(__dirname,'../../../../server');
     } else {
         serverFolderPath = path.resolve(serverFolderPath);
     }
