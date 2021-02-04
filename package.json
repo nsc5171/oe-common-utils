@@ -1,5 +1,5 @@
 {
-  "name": "oe-common-customizations",
+  "name": "@nsaichandra/oe-common-customizations",
   "version": "0.0.1-beta",
   "description": "A well defined useful set of customizations on oe-apps packed as a pluggable module.",
   "author": "Sai Chandra Nandana",
@@ -23,5 +23,6 @@
     "babel-eslint": "^7.2.3",
     "eslint": "^4.10.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "private": false
 }
