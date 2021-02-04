@@ -1,6 +1,6 @@
 {
   "name": "@nsaichandra/oe-common-customizations",
-  "version": "0.0.1-beta",
+  "version": "0.0.1",
   "description": "A well defined useful set of customizations on oe-apps packed as a pluggable module.",
   "author": "Sai Chandra Nandana",
   "engines": {
@@ -25,5 +25,8 @@
   },
   "license": "MIT",
   "private": false,
-  "keywords":["oecloud","app-list-module"]
+  "keywords": [
+    "oecloud",
+    "app-list-module"
+  ]
 }
