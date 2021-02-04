@@ -28,5 +28,9 @@
   "keywords": [
     "oecloud",
     "app-list-module"
-  ]
+  ],
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/nsc5171/oe-common-utils.git"
+  }
 }
