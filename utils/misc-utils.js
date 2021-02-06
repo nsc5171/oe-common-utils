@@ -17,5 +17,6 @@ module.exports = {
     },
     arrayify: function arrayify(inp) {
         return inp === undefined ? [] : Array.isArray(inp) ? inp : [inp];
-    }
+    },
+    options_arg_defn: { arg: 'options', type: 'object', http: 'optionsFromRequest' }
 }

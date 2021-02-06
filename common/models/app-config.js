@@ -5,8 +5,8 @@ module.exports = function (AppConfig) {
         refreshCache();
     });
 
-    AppConfig.getConfig = function getConfig(key) {
-        return utils.valueAt(this, ['__syncCacheMap', key]);
+    AppConfig.getConfig = function getConfig(key = 'settings') {
+        return utils.valueAt(this, ['__syncCacheMap', key, 'value']);
     }
 
     function refreshCache() {
