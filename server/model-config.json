@@ -9,5 +9,9 @@
             "loopback/common/mixins",
             "loopback/server/mixins"
         ]
+    },
+    "AppConfig": {
+        "dataSource": "db",
+        "public": true
     }
 }

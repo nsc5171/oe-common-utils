@@ -13,8 +13,7 @@
   },
   "dependencies": {
     "async": "^2.5.0",
-    "lodash": "^4.17.15",
-    "oe-migration": "^2.3.0"
+    "lodash": "^4.17.15"
   },
   "devDependencies": {
     "babel-eslint": "^7.2.3",
