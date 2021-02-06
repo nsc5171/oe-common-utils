@@ -1,7 +1,7 @@
 'use strict';
 const utils = require('../../utils');
 module.exports = function (AppConfig) {
-    AppConfig.on('attach', function cacheAppConfig() {
+    AppConfig.on('dataSourceAttached', function cacheAppConfig() {
         refreshCache();
     });
 
