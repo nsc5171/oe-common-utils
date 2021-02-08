@@ -107,6 +107,22 @@ ModelBaseClass.prototype.toJSON = function toJSONSerializerFuncOverriden() {
             }
         }
     }
+    data._Srlzn = 'Y';
 
     return data;
+};
+
+List.prototype.toJSON = function () {
+    const items = [];
+    this.forEach(function (item) {
+        if (item && Array.isArray(item) && item.toArray) {
+            const subArray = item.toArray();
+            items.push(subArray);
+        } else if (item && typeof item === 'object' && item.toObject) {
+            items.push(item.toJSON());
+        } else {
+            items.push(item);
+        }
+    });
+    return items;
 };

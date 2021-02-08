@@ -1,6 +1,6 @@
 'use strict';
 
-const modeBaseClassWrapper = require('./server/wrappers/mode-base-class-wrapper')
+const modeBaseClassWrapper = require('./server/wrappers/toJSON-wrapper.js')
 
 module.exports = function (app) {
 };
