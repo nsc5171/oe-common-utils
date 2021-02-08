@@ -18,5 +18,12 @@ module.exports = {
     arrayify: function arrayify(inp) {
         return inp === undefined ? [] : Array.isArray(inp) ? inp : [inp];
     },
+    safeParse: function safeParse(inp) {
+        try {
+            return JSON.parse(inp);
+        } catch (err) {
+            return;
+        }
+    },
     options_arg_defn: { arg: 'options', type: 'object', http: 'optionsFromRequest' }
 }
