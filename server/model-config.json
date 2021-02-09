@@ -8,7 +8,7 @@
         "mixins": [
             "loopback/common/mixins",
             "loopback/server/mixins",
-            "../common/models"
+            "../common/mixins"
         ]
     },
     "AppConfig": {
