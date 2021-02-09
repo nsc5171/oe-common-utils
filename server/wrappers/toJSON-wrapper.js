@@ -107,8 +107,6 @@ ModelBaseClass.prototype.toJSON = function toJSONSerializerFuncOverriden() {
             }
         }
     }
-    data._Srlzn = 'Y';
-
     return data;
 };
 
