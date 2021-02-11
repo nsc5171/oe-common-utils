@@ -14,15 +14,16 @@
   "dependencies": {
     "async": "^2.5.0",
     "handlebars": "^4.7.6",
-    "lodash": "^4.17.15"
+    "lodash": "^4.17.15",
+    "node-cache": "^5.1.2",
+    "oe-logger": "^2.0.0"
   },
   "devDependencies": {
     "babel-eslint": "^7.2.3",
     "eslint": "^4.10.0",
     "loopback-component-explorer": "^6.5.0",
     "oe-cloud": "^2.0.0",
-    "oe-connector-mongodb": "^2.0.0",
-    "oe-logger": "^2.0.0"
+    "oe-connector-mongodb": "^2.0.0"
   },
   "license": "MIT",
   "private": false,
