@@ -66,22 +66,60 @@ function checkAndEnableCachingMechForDataSource(dataSource) {
                 let self = this;
                 if (typeof self.connector.query === 'function') {
                     const _all = self.connector.all;
-                    self.connector.all = function (model, command, queryObj, cb) {
-                        if ((!['find', 'findOne'].includes(command))) return _all.apply(self.connector, arguments); // if not select continue with normal flow
-                        let modelClass = model && lb.findModel(model);
-                        if (!modelClass || !modelClass[cacheSetupKey]) return _all.apply(self.connector, arguments); // if caching not enabled continue with normal flow
-                        modelClass[cacheSetupKey].get(JSON.stringify(queryObj)).then(result=>{
-
-                        })
+                    self.connector.all = function cacheOverridenAll(model, filter, options, callback) {
+                        let args = arguments;
+                        if (!modelClass || !modelClass[cacheSetupKey]) return _all.apply(self.connector, args); // if caching not enabled continue with normal flow
+                        let cacheKey = 'filter_' + JSON.stringify(filter);
+                        modelClass[cacheSetupKey].get().then(result => {
+                            if (result) {
+                                return callback(null, result);
+                            } else {
+                                const finalCb = args[args.length - 1];
+                                args[args.length - 1] = function (err, objs) {
+                                    if (err) {
+                                        return finalCb(err);
+                                    } else {
+                                        finalCb(null, objs);
+                                        modelClass[cacheSetupKey].set(cacheKey, objs).catch(err => {
+                                            log.debug(log.defaultContext(), 'Error when updating cache', cacheKey, model, err)
+                                        });
+                                        return;
+                                    }
+                                };
+                                _all.apply(self.connector, args);
+                            }
+                        }).catch(err => {
+                            log.debug(log.defaultContext(), 'Error when fetching cache', cacheKey, model, err);
+                            return _all.apply(self.connector, args)
+                        });
                     }
                     const _find = self.connector.find;
-                    self.connector.find = function (model, command, queryObj, cb) {
-                        if ((!['find', 'findOne'].includes(command))) return _find.apply(self.connector, arguments); // if not select continue with normal flow
-                        let modelClass = model && lb.findModel(model);
-                        if (!modelClass || !modelClass[cacheSetupKey]) return _find.apply(self.connector, arguments); // if caching not enabled continue with normal flow
-                        modelClass[cacheSetupKey].get(JSON.stringify(queryObj)).then(result=>{
-
-                        })
+                    self.connector.find = function (model, id, options, callback) {
+                        let args = arguments;
+                        if (!modelClass || !modelClass[cacheSetupKey]) return _find.apply(self.connector, args); // if caching not enabled continue with normal flow
+                        let cacheKey = 'id_' + JSON.stringify(id);
+                        modelClass[cacheSetupKey].get().then(result => {
+                            if (result) {
+                                return callback(null, result);
+                            } else {
+                                const finalCb = args[args.length - 1];
+                                args[args.length - 1] = function (err, data) {
+                                    if (err) {
+                                        return finalCb(err);
+                                    } else {
+                                        finalCb(null, data);
+                                        modelClass[cacheSetupKey].set(cacheKey, data).catch(err => {
+                                            log.debug(log.defaultContext(), 'Error when updating cache', cacheKey, model, err)
+                                        });
+                                        return;
+                                    }
+                                };
+                                _find.apply(self.connector, args);
+                            }
+                        }).catch(err => {
+                            log.debug(log.defaultContext(), 'Error when fetching cache', cacheKey, model, err);
+                            return _find.apply(self.connector, args)
+                        });
                     }
                 }
             });
