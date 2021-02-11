@@ -33,7 +33,7 @@ const cacheModules = {
 const defaultCachingModule = 'node-cache';
 
 
-modeule.exports = function CachingMixin_nsc(Model, opts) {
+module.exports = function CachingMixin_nsc(Model, opts) {
 
     if (Model.dataSource.settings && ["true", true].some(v => v === Model.dataSource.settings.disableCaching_nsc)) {
         log.debug(log.defaultContext(), `Skipping caching for datasource ${dataSource.connector.name}`, Model.modelName)
