@@ -1,9 +1,9 @@
-
 'use strict';
 
 const utils = require('../../utils')
 const log = require('oe-logger')('CachingMixin_nsc');
 const lb = require('loopback');
+const mongodb = require('oe-connector-mongodb/lib/mongodb');
 const cacheSetupKey = '_caching_mixin_nsc'
 const cacheModules = {
     'node-cache': {
@@ -27,6 +27,11 @@ const cacheModules = {
             let self = this;
             if (!self._cacheInstance) self._cacheInstance = new (self.implmtn)(self.opts || undefined);
             return self._cacheInstance;
+        },
+        deleteCache: function deleteCache() {
+            let self = this;
+            delete self._cacheInstance;
+            return Promise.resolve({ response: "Cache instance deleted successfully." });
         }
     }
 };
@@ -34,6 +39,19 @@ const defaultCachingModule = 'node-cache';
 
 
 module.exports = function CachingMixin_nsc(Model, opts) {
+
+    Model.deleteCache = function (options, next) {
+        let self = this;
+        self[cacheSetupKey].deleteCache().then(resp => next(null, resp)).catch(next);
+    };
+
+    Model.remoteMethod('deleteCache', {
+        accepts: [
+            utils.options_arg_defn
+        ],
+        http: { verb: 'DELETE' },
+        returns: { root: true, type: 'object' }
+    });
 
     if (Model.dataSource.settings && ["true", true].some(v => v === Model.dataSource.settings.disableCaching_nsc)) {
         log.debug(log.defaultContext(), `Skipping caching for datasource ${dataSource.connector.name}`, Model.modelName)
@@ -63,12 +81,12 @@ function checkAndEnableCachingMechForDataSource(dataSource) {
     switch (dataSource.connector.name) {
         case ('mongodb'): {
             dataSource.on('connected', function CachingMixin_nsc_wrapper() {
-                let self = this;
-                if (typeof self.connector.query === 'function') {
-                    const _all = self.connector.all;
-                    self.connector.all = function cacheOverridenAll(model, filter, options, callback) {
+                let dsSelf = this;
+                if (typeof dsSelf.connector.query === 'function') {
+                    const _all = dsSelf.connector.all;
+                    /* dsSelf.connector.all = function cacheOverridenAll(model, filter, options, callback) {
                         let args = arguments, modelClass = lb.findModel(model);
-                        if (!modelClass || !modelClass[cacheSetupKey]) return _all.apply(self.connector, args); // if caching not enabled continue with normal flow
+                        if (!modelClass || !modelClass[cacheSetupKey]) return _all.apply(dsSelf.connector, args); // if caching not enabled continue with normal flow
                         let cacheKey = 'filter_' + JSON.stringify(filter);
                         modelClass[cacheSetupKey].get(cacheKey).then(result => {
                             if (result) {
@@ -86,17 +104,194 @@ function checkAndEnableCachingMechForDataSource(dataSource) {
                                         return;
                                     }
                                 };
-                                _all.apply(self.connector, args);
+                                _all.apply(dsSelf.connector, args);
                             }
                         }).catch(err => {
                             log.debug(log.defaultContext(), 'Error when fetching cache', cacheKey, model, err);
-                            return _all.apply(self.connector, args)
+                            return _all.apply(dsSelf.connector, args)
                         });
-                    }
-                    const _find = self.connector.find;
-                    self.connector.find = function (model, id, options, callback) {
+                    } */
+                    dsSelf.connector.all = function cacheOverridenAll(model, filter, options, callback) {
+                        var cnctrSelf = this;
                         let args = arguments, modelClass = lb.findModel(model);
-                        if (!modelClass || !modelClass[cacheSetupKey]) return _find.apply(self.connector, args); // if caching not enabled continue with normal flow
+                        if (!modelClass || !modelClass[cacheSetupKey]) return _all.apply(dsSelf.connector, args); // if caching not enabled continue with normal flow
+                        if (cnctrSelf.debug) {
+                            debug('all', model, filter);
+                        }
+                        filter = filter || {};
+                        var idName = cnctrSelf.idName(model);
+                        var query = {};
+                        if (filter.where) {
+                            query = cnctrSelf.buildWhere(model, filter.where, options);
+                        }
+                        if (filter && filter.group) {
+                            cnctrSelf.modifyFilter(filter);
+                            var pipeline = cnctrSelf.buildPipeline(model, filter, query);
+                        }
+                        var fields = filter.fields;
+                        var groups = filter.group;
+
+                        // Convert custom column names
+                        fields = cnctrSelf.fromPropertyToDatabaseNames(model, fields);
+
+                        let cacheKey = 'filter_' + JSON.stringify(Object.assign({}, filter, { where: undefined, include: undefined, query }));
+                        if (groups) {
+                            // self.modifyFilter(filter);
+                            // var pipeline = self.buildPipeline(model, filter, query);
+                            cnctrSelf.execute(model, 'aggregate', pipeline, {}, processAggregationResponse);
+                        } else if (fields) {
+                            var findOpts = { projection: mongodb.fieldsArrayToObj(fields) };
+                            // cnctrSelf.execute(model, 'find', query, findOpts, processResponse);
+                            modelClass[cacheSetupKey].get(cacheKey).then(result => {
+                                if (result) {
+                                    return checkForIncludeAndProceed(JSON.parse(result), callback);
+                                } else {
+                                    cnctrSelf.execute(model, 'find', query, findOpts, (err, cursor) => {
+                                        processResponse(err, cursor, (err, finalResp, currResp) => {
+                                            callback(err, finalResp);
+                                            modelClass[cacheSetupKey].set(cacheKey, currResp).catch(err => {
+                                                log.debug(log.defaultContext(), 'Error when updating cache', cacheKey, model, err)
+                                            });
+                                            return;
+                                        })
+                                    });
+                                }
+                            }).catch(err => {
+                                log.debug(log.defaultContext(), 'Error when fetching cache', cacheKey, model, err);
+                                return _all.apply(dsSelf.connector, args)
+                            });
+                        } else {
+                            modelClass[cacheSetupKey].get(cacheKey).then(result => {
+                                if (result) {
+                                    return checkForIncludeAndProceed(JSON.parse(result), callback);
+                                } else {
+                                    cnctrSelf.execute(model, 'find', query, (err, cursor) => {
+                                        processResponse(err, cursor, (err, finalResp, currResp) => {
+                                            callback(err, finalResp);
+                                            modelClass[cacheSetupKey].set(cacheKey, currResp).catch(err => {
+                                                log.debug(log.defaultContext(), 'Error when updating cache', cacheKey, model, err)
+                                            });
+                                            return;
+                                        })
+                                    });
+                                }
+                            }).catch(err => {
+                                log.debug(log.defaultContext(), 'Error when fetching cache', cacheKey, model, err);
+                                return _all.apply(dsSelf.connector, args)
+                            });
+                        }
+
+                        function checkForIncludeAndProceed(objs, cb) {
+                            if (filter && filter.include) {
+                                cnctrSelf._models[model].model.include(
+                                    objs,
+                                    filter.include,
+                                    options,
+                                    cb
+                                );
+                            } else {
+                                cb(null, objs);
+                            }
+                        }
+
+                        function processResponse(err, cursor, cb) {
+                            // if (!cb) cb = callback;
+                            if (err) {
+                                return cb(err);
+                            }
+
+                            var collation = options && options.collation;
+                            if (collation) {
+                                cursor.collation(collation);
+                            }
+
+                            // don't apply sorting if dealing with a geo query
+                            if (!hasNearFilter(filter.where)) {
+                                var order = cnctrSelf.buildSort(model, filter.order, options);
+                                cursor.sort(order);
+                            }
+
+                            if (filter.limit) {
+                                cursor.limit(filter.limit);
+                            }
+                            if (filter.skip) {
+                                cursor.skip(filter.skip);
+                            } else if (filter.offset) {
+                                cursor.skip(filter.offset);
+                            }
+
+                            var shouldSetIdValue = idIncluded(fields, idName);
+                            var deleteMongoId = !shouldSetIdValue || idName !== '_id';
+
+                            cursor.toArray(function (err, data) {
+                                if (cnctrSelf.debug) {
+                                    debug('all', model, filter, err, data);
+                                }
+                                if (err) {
+                                    return cb(err);
+                                }
+                                var objs = data.map(function (o) {
+                                    if (shouldSetIdValue) {
+                                        cnctrSelf.setIdValue(model, o, o._id);
+                                    }
+                                    // Don't pass back _id if the fields is set
+                                    if (deleteMongoId) {
+                                        delete o._id;
+                                    }
+
+                                    o = cnctrSelf.fromDatabase(model, o);
+                                    return o;
+                                });
+                                let cacheVal = JSON.stringify(objs);
+                                if (filter && filter.include) {
+                                    cnctrSelf._models[model].model.include(
+                                        objs,
+                                        filter.include,
+                                        options,
+                                        (err, resp) => cb(err, resp, cacheVal)
+                                    );
+                                } else {
+                                    cb(null, objs, cacheVal);
+                                }
+                            });
+                        }
+
+                        function processAggregationResponse(err, cursor) {
+                            if (err) {
+                                callback(err);
+                            }
+                            if (filter.group) {
+                                Object.keys(filter.group).forEach(function (key) {
+                                    key = key.toLowerCase();
+                                    if (key !== 'groupby') {
+                                        var val = filter.group[key];
+                                        Object.keys(val).forEach(function (elem) {
+                                            filter.fields.push(val[elem]);
+                                        });
+                                    }
+                                });
+                            }
+                            cursor.toArray(function (err, data) {
+                                if (cnctrSelf.debug) {
+                                    debug('all', model, filter, err, data);
+                                }
+                                if (err) {
+                                    return callback(err);
+                                }
+                                var objs = data.map(function (obj) {
+                                    var data = Object.assign(obj, obj._id);
+                                    delete data['_id'];
+                                    data = cnctrSelf.fromDatabase(model, data);
+                                    return data;
+                                });
+                                callback(null, objs);
+                            });
+                        }
+                    };
+                    const _find = dsSelf.connector.find;
+                    dsSelf.connector.find = function cacheOverridenFind(model, id, options, callback) {
+                        let args = arguments, modelClass = lb.findModel(model);
+                        if (!modelClass || !modelClass[cacheSetupKey]) return _find.apply(dsSelf.connector, args); // if caching not enabled continue with normal flow
                         let cacheKey = 'id_' + JSON.stringify(id);
                         modelClass[cacheSetupKey].get(cacheKey).then(result => {
                             if (result) {
@@ -114,11 +309,11 @@ function checkAndEnableCachingMechForDataSource(dataSource) {
                                         return;
                                     }
                                 };
-                                _find.apply(self.connector, args);
+                                _find.apply(dsSelf.connector, args);
                             }
                         }).catch(err => {
                             log.debug(log.defaultContext(), 'Error when fetching cache', cacheKey, model, err);
-                            return _find.apply(self.connector, args)
+                            return _find.apply(dsSelf.connector, args)
                         });
                     }
                 }
@@ -132,3 +327,70 @@ function checkAndEnableCachingMechForDataSource(dataSource) {
 
 }
 
+/*!
+ * Decide if id should be included
+ * @param {Object} fields
+ * @returns {Boolean}
+ * @private
+ */
+function idIncluded(fields, idName) {
+    if (!fields) {
+        return true;
+    }
+    if (Array.isArray(fields)) {
+        return fields.indexOf(idName) >= 0;
+    }
+    if (fields[idName]) {
+        // Included
+        return true;
+    }
+    if (idName in fields && !fields[idName]) {
+        // Excluded
+        return false;
+    }
+    for (var f in fields) {
+        return !fields[f]; // If the fields has exclusion
+    }
+    return true;
+}
+
+function hasNearFilter(where) {
+    if (!where) return false;
+    // TODO: Optimize to return once a `near` key is found
+    // instead of searching through everything
+
+    var isFound = false;
+
+    searchForNear(where);
+
+    function found(prop) {
+        return prop && prop.near;
+    }
+
+    function searchForNear(node) {
+        if (!node) {
+            return;
+        }
+
+        if (Array.isArray(node)) {
+            node.forEach(function (prop) {
+                isFound = found(prop);
+
+                if (!isFound) {
+                    searchForNear(prop);
+                }
+            });
+        } else if (typeof node === 'object') {
+            Object.keys(node).forEach(function (key) {
+                var prop = node[key];
+
+                isFound = found(prop);
+
+                if (!isFound) {
+                    searchForNear(prop);
+                }
+            });
+        }
+    }
+    return isFound;
+}
