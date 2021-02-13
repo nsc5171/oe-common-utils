@@ -43,9 +43,9 @@ module.exports = function CachingMixin_nsc(Model, opts) {
     checkAndEnableCachingMechForDataSource(Model.dataSource);
 
     let cacheModuleName = opts.cacheModule && cacheModules[opts.cacheModule] ? opts.cacheModule : defaultCachingModule;
-    let cacheModule = cacheModules[opts.cacheModule];
+    let cacheModule = cacheModules[cacheModuleName];
 
-    Model[cacheSetupKey] = Object.apply({
+    Model[cacheSetupKey] = Object.assign({
         enabled: true,
         moduleName: cacheModuleName,
         opts
@@ -67,10 +67,10 @@ function checkAndEnableCachingMechForDataSource(dataSource) {
                 if (typeof self.connector.query === 'function') {
                     const _all = self.connector.all;
                     self.connector.all = function cacheOverridenAll(model, filter, options, callback) {
-                        let args = arguments;
+                        let args = arguments, modelClass = lb.findModel(model);
                         if (!modelClass || !modelClass[cacheSetupKey]) return _all.apply(self.connector, args); // if caching not enabled continue with normal flow
                         let cacheKey = 'filter_' + JSON.stringify(filter);
-                        modelClass[cacheSetupKey].get().then(result => {
+                        modelClass[cacheSetupKey].get(cacheKey).then(result => {
                             if (result) {
                                 return callback(null, result);
                             } else {
@@ -95,10 +95,10 @@ function checkAndEnableCachingMechForDataSource(dataSource) {
                     }
                     const _find = self.connector.find;
                     self.connector.find = function (model, id, options, callback) {
-                        let args = arguments;
+                        let args = arguments, modelClass = lb.findModel(model);
                         if (!modelClass || !modelClass[cacheSetupKey]) return _find.apply(self.connector, args); // if caching not enabled continue with normal flow
                         let cacheKey = 'id_' + JSON.stringify(id);
-                        modelClass[cacheSetupKey].get().then(result => {
+                        modelClass[cacheSetupKey].get(cacheKey).then(result => {
                             if (result) {
                                 return callback(null, result);
                             } else {
