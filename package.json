@@ -1,6 +1,6 @@
 {
   "name": "@nsaichandra/oe-common-utils",
-  "version": "0.0.1-beta",
+  "version": "0.0.1",
   "description": "A well defined useful set of utils on oe-apps packed as a pluggable app-module.",
   "author": "Sai Chandra Nandana",
   "engines": {
@@ -13,16 +13,17 @@
   },
   "dependencies": {
     "async": "^2.5.0",
+    "handlebars": "^4.7.6",
     "lodash": "^4.17.15",
-    "oe-migration": "^2.3.0"
+    "node-cache": "^5.1.2",
+    "oe-logger": "^2.0.0"
   },
   "devDependencies": {
     "babel-eslint": "^7.2.3",
     "eslint": "^4.10.0",
     "loopback-component-explorer": "^6.5.0",
     "oe-cloud": "^2.0.0",
-    "oe-connector-mongodb": "^2.0.0",
-    "oe-logger": "^2.0.0"
+    "oe-connector-mongodb": "^2.0.0"
   },
   "license": "MIT",
   "private": false,
