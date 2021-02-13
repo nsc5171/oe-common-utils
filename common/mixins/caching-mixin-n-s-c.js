@@ -37,7 +37,6 @@ const cacheModules = {
 };
 const defaultCachingModule = 'node-cache';
 
-
 module.exports = function CachingMixin_nsc(Model, opts) {
 
     Model.deleteCache = function (options, next) {
@@ -75,42 +74,18 @@ module.exports = function CachingMixin_nsc(Model, opts) {
 function checkAndEnableCachingMechForDataSource(dataSource) {
 
 
-    if (utils.arrayify(dataSource && dataSource._events && dataSource._events.connected).some(func =>
+    let cnctrName = dataSource.connector.name;
+    if (dataSource[cacheSetupKey] || utils.arrayify(dataSource && dataSource._events && dataSource._events.connected).some(func =>
         func.name === 'CachingMixin_nsc_wrapper')) return dataSource;
 
-    switch (dataSource.connector.name) {
+    switch (cnctrName) {
         case ('mongodb'): {
             dataSource.on('connected', function CachingMixin_nsc_wrapper() {
                 let dsSelf = this;
+                if (dsSelf[cacheSetupKey]) return;
+                dsSelf[cacheSetupKey] = true;
                 if (typeof dsSelf.connector.query === 'function') {
                     const _all = dsSelf.connector.all;
-                    /* dsSelf.connector.all = function cacheOverridenAll(model, filter, options, callback) {
-                        let args = arguments, modelClass = lb.findModel(model);
-                        if (!modelClass || !modelClass[cacheSetupKey]) return _all.apply(dsSelf.connector, args); // if caching not enabled continue with normal flow
-                        let cacheKey = 'filter_' + JSON.stringify(filter);
-                        modelClass[cacheSetupKey].get(cacheKey).then(result => {
-                            if (result) {
-                                return callback(null, result);
-                            } else {
-                                const finalCb = args[args.length - 1];
-                                args[args.length - 1] = function (err, objs) {
-                                    if (err) {
-                                        return finalCb(err);
-                                    } else {
-                                        finalCb(null, objs);
-                                        modelClass[cacheSetupKey].set(cacheKey, objs).catch(err => {
-                                            log.debug(log.defaultContext(), 'Error when updating cache', cacheKey, model, err)
-                                        });
-                                        return;
-                                    }
-                                };
-                                _all.apply(dsSelf.connector, args);
-                            }
-                        }).catch(err => {
-                            log.debug(log.defaultContext(), 'Error when fetching cache', cacheKey, model, err);
-                            return _all.apply(dsSelf.connector, args)
-                        });
-                    } */
                     dsSelf.connector.all = function cacheOverridenAll(model, filter, options, callback) {
                         var cnctrSelf = this;
                         let args = arguments, modelClass = lb.findModel(model);
@@ -134,14 +109,31 @@ function checkAndEnableCachingMechForDataSource(dataSource) {
                         // Convert custom column names
                         fields = cnctrSelf.fromPropertyToDatabaseNames(model, fields);
 
-                        let cacheKey = 'filter_' + JSON.stringify(Object.assign({}, filter, { where: undefined, include: undefined, query }));
+                        let cacheKey = 'all_' + JSON.stringify(Object.assign({}, filter, { where: undefined, include: undefined, query }));
                         if (groups) {
-                            // self.modifyFilter(filter);
-                            // var pipeline = self.buildPipeline(model, filter, query);
+                            // cnctrSelf.modifyFilter(filter);
+                            // var pipeline = cnctrSelf.buildPipeline(model, filter, query);
                             cnctrSelf.execute(model, 'aggregate', pipeline, {}, processAggregationResponse);
+                            modelClass[cacheSetupKey].get(cacheKey).then(result => {
+                                if (result) {
+                                    return callback(null, JSON.parse(result));
+                                } else {
+                                    cnctrSelf.execute(model, 'aggregate', pipeline, {}, (err, cursor) => {
+                                        processAggregationResponse(err, cursor, (err, finalResp, currResp) => {
+                                            callback(err, finalResp);
+                                            modelClass[cacheSetupKey].set(cacheKey, currResp).catch(err => {
+                                                log.debug(log.defaultContext(), 'Error when updating cache', cacheKey, model, err)
+                                            });
+                                            return;
+                                        })
+                                    });
+                                }
+                            }).catch(err => {
+                                log.debug(log.defaultContext(), 'Error when fetching cache', cacheKey, model, err);
+                                return _all.apply(dsSelf.connector, args)
+                            });
                         } else if (fields) {
                             var findOpts = { projection: mongodb.fieldsArrayToObj(fields) };
-                            // cnctrSelf.execute(model, 'find', query, findOpts, processResponse);
                             modelClass[cacheSetupKey].get(cacheKey).then(result => {
                                 if (result) {
                                     return checkForIncludeAndProceed(JSON.parse(result), callback);
@@ -284,7 +276,8 @@ function checkAndEnableCachingMechForDataSource(dataSource) {
                                     data = cnctrSelf.fromDatabase(model, data);
                                     return data;
                                 });
-                                callback(null, objs);
+                                let cacheValue = JSON.stringify(objs);
+                                callback(null, objs, cacheValue);
                             });
                         }
                     };
@@ -292,10 +285,10 @@ function checkAndEnableCachingMechForDataSource(dataSource) {
                     dsSelf.connector.find = function cacheOverridenFind(model, id, options, callback) {
                         let args = arguments, modelClass = lb.findModel(model);
                         if (!modelClass || !modelClass[cacheSetupKey]) return _find.apply(dsSelf.connector, args); // if caching not enabled continue with normal flow
-                        let cacheKey = 'id_' + JSON.stringify(id);
+                        let cacheKey = 'find_' + JSON.stringify(id);
                         modelClass[cacheSetupKey].get(cacheKey).then(result => {
                             if (result) {
-                                return callback(null, result);
+                                return callback(null, JSON.parse(result));
                             } else {
                                 const finalCb = args[args.length - 1];
                                 args[args.length - 1] = function (err, data) {
@@ -303,7 +296,7 @@ function checkAndEnableCachingMechForDataSource(dataSource) {
                                         return finalCb(err);
                                     } else {
                                         finalCb(null, data);
-                                        modelClass[cacheSetupKey].set(cacheKey, data).catch(err => {
+                                        modelClass[cacheSetupKey].set(cacheKey, JSON.stringify(data)).catch(err => {
                                             log.debug(log.defaultContext(), 'Error when updating cache', cacheKey, model, err)
                                         });
                                         return;
@@ -314,6 +307,34 @@ function checkAndEnableCachingMechForDataSource(dataSource) {
                         }).catch(err => {
                             log.debug(log.defaultContext(), 'Error when fetching cache', cacheKey, model, err);
                             return _find.apply(dsSelf.connector, args)
+                        });
+                    }
+                    const _count = dsSelf.connector.count;
+                    dsSelf.connector.count = function cacheOverridenCount(model, where, options, callback) {
+                        let args = arguments, modelClass = lb.findModel(model);
+                        if (!modelClass || !modelClass[cacheSetupKey]) return _count.apply(dsSelf.connector, args); // if caching not enabled continue with normal flow
+                        let cacheKey = 'count_' + JSON.stringify(where);
+                        modelClass[cacheSetupKey].get(cacheKey).then(result => {
+                            if (result) {
+                                return callback(null, Number(result));
+                            } else {
+                                const finalCb = args[args.length - 1];
+                                args[args.length - 1] = function (err, count) {
+                                    if (err) {
+                                        return finalCb(err);
+                                    } else {
+                                        finalCb(null, count);
+                                        modelClass[cacheSetupKey].set(cacheKey, String(count)).catch(err => {
+                                            log.debug(log.defaultContext(), 'Error when updating cache', cacheKey, model, err)
+                                        });
+                                        return;
+                                    }
+                                };
+                                _count.apply(dsSelf.connector, args);
+                            }
+                        }).catch(err => {
+                            log.debug(log.defaultContext(), 'Error when fetching cache', cacheKey, model, err);
+                            return _count.apply(dsSelf.connector, args)
                         });
                     }
                 }
