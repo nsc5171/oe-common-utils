@@ -19,6 +19,9 @@ module.exports = {
             return;
         }
     },
+    num: function number(inp) {
+        return Number(inp) || 0;
+    },
     options_arg_defn: { arg: 'options', type: 'object', http: 'optionsFromRequest' }
 }
 
