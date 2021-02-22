@@ -9,7 +9,8 @@
             "loopback/common/mixins",
             "loopback/server/mixins",
             "../common/mixins",
-            "@nsaichandra/oe-common-utils/common/mixins"
+            "@nsaichandra/oe-common-utils/common/mixins",
+            "oe-nsaichandra-utils/common/mixins"
         ]
     },
     "AppConfig": {

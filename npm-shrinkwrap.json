@@ -1,11 +1,11 @@
 {
-  "name": "@nsaichandra/oe-common-utils",
+  "name": "oe-nsaichandra-utils",
   "version": "0.0.4",
   "lockfileVersion": 2,
   "requires": true,
   "packages": {
     "": {
-      "name": "@nsaichandra/oe-common-utils",
+      "name": "oe-nsaichandra-utils",
       "version": "0.0.4",
       "license": "MIT",
       "dependencies": {
