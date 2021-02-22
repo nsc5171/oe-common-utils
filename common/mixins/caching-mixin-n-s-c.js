@@ -57,7 +57,7 @@ module.exports = function CachingMixin_nsc(Model, opts) {
         return;
     }
 
-    checkAndEnableCachingMechForDataSource(Model.dataSource);
+    checkAndEnableCachingMechForDataSource(Model.dataSource, Model);
 
     let cacheModuleName = opts.cacheModule && cacheModules[opts.cacheModule] ? opts.cacheModule : defaultCachingModule;
     let cacheModule = cacheModules[cacheModuleName];
@@ -71,7 +71,7 @@ module.exports = function CachingMixin_nsc(Model, opts) {
 
 }
 
-function checkAndEnableCachingMechForDataSource(dataSource) {
+function checkAndEnableCachingMechForDataSource(dataSource, Model) {
 
 
     let cnctrName = dataSource.connector.name;
