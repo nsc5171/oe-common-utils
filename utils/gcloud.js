@@ -14,7 +14,9 @@ module.exports = {
                 'fatal': 60
             };
             if ([true, "TRUE", "true", "Y"].some(v => v === process.env.ENABLE_GCLOUD_LOGGING)) {
-                oeLogger('LOGGER-CONFIG').getLogger().streams.push(new (require('@google-cloud/logging-bunyan').LoggingBunyan)().stream(levels[process.env.ENABLE_GCLOUD_LOGGING_LVL] || 50));
+                let stream = new (require('@google-cloud/logging-bunyan').LoggingBunyan)().stream(levels[process.env.ENABLE_GCLOUD_LOGGING_LVL] || 50);
+                stream.raw = false;
+                oeLogger('LOGGER-CONFIG').getLogger().streams.push(stream);
             }
             loggingChecked = true;
         }
