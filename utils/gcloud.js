@@ -15,7 +15,7 @@ module.exports = {
             };
             if ([true, "TRUE", "true", "Y"].some(v => v === process.env.ENABLE_GCLOUD_LOGGING)) {
                 let stream = new (require('@google-cloud/logging-bunyan').LoggingBunyan)().stream(levels[process.env.ENABLE_GCLOUD_LOGGING_LVL] || 50);
-                stream.raw = false;
+                stream.raw = true;
                 oeLogger('LOGGER-CONFIG').getLogger().streams.push(stream);
             }
             loggingChecked = true;
