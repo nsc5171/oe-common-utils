@@ -1,6 +1,6 @@
 {
   "name": "AppConfig",
-  "base": "PersistedModel",
+  "base": "BaseEntity",
   "idInjection": true,
   "options": {
     "validateUpsert": true
