@@ -1,1 +1,1 @@
-module.exports = Object.assign({}, require('./misc-utils'),require('./gcloud'));
+module.exports = Object.assign({}, require('./misc-utils'),require('./gcloud'),require('./error-handling'));
