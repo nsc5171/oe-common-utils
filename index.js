@@ -5,7 +5,7 @@ const logger = require('oe-logger');
 function gcloudLoggerEnablement() {
 
     if ([true, "TRUE", "true", "Y"].some(v => v === process.env.ENABLE_GCLOUD_LOGGING)) {
-        logger('LOGGER-CONFIG').streams.push(new (require('@google-cloud/logging-bunyan').LoggingBunyan)().stream(process.env.ENABLE_GCLOUD_LOGGING_LVL || 'error'));
+        logger('LOGGER-CONFIG').getLogger().streams.push(new (require('@google-cloud/logging-bunyan').LoggingBunyan)().stream(process.env.ENABLE_GCLOUD_LOGGING_LVL || 'error'));
     }
     return true;
 }
