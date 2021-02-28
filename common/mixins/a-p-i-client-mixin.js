@@ -1,6 +1,7 @@
+
 'use strict';
 
-const utils = ('../utils');
+const utils = require('../../utils')
 
 module.exports = function APIClientMixin(Model) {
 
