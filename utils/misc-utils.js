@@ -1,4 +1,8 @@
 'use strict';
+
+const hb = require('handlebars');
+const lb = require('loopback');
+
 module.exports = {
     valueAt,
     valueResolver: function (target, defFallbackVal) {
@@ -29,6 +33,8 @@ module.exports = {
         }
         return Math.floor(Math.random() * Math.pow(10, len));
     },
+    hb,
+    lb,
     options_arg_defn: { arg: 'options', type: 'object', http: 'optionsFromRequest' }
 }
 
