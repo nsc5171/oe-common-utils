@@ -19,8 +19,15 @@ module.exports = {
             return;
         }
     },
-    num: function number(inp) {
-        return Number(inp) || 0;
+    num: number,
+    randomNum: function randomNum(len) {
+        len = number(len);
+        if (len < 1) {
+            return;
+        } else if (len > 16) {
+            len = 16;
+        }
+        return Math.floor(Math.random() * Math.pow(10, len));
     },
     options_arg_defn: { arg: 'options', type: 'object', http: 'optionsFromRequest' }
 }
@@ -39,4 +46,8 @@ function valueAt(target, path, fallbackVal) {
         op = fallbackVal;
     }
     return op === undefined ? fallbackVal : op;
+}
+
+function number(inp) {
+    return Number(inp) || 0;
 }
