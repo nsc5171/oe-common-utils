@@ -31,7 +31,8 @@ module.exports = {
         } else if (len > 16) {
             len = 16;
         }
-        return Math.floor(Math.random() * (9 * Math.pow(10, len - 1) - 1) + Math.pow(10, len - 1));
+        let tenPowLenM1 = Math.pow(10, len - 1);
+        return Math.floor(Math.random() * (9 * tenPowLenM1 - 1) + tenPowLenM1);
     },
     hb,
     lb,
