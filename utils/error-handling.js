@@ -47,7 +47,7 @@ module.exports = {
                 },
                 function processMsg(stepDone) {
                     errInst.status = miscUtils.num(opts.status) || 422;
-                    errInst.message = hb.compile(errInst.message)(typeof opts.ctx === 'object' ? opts.ctx : {});
+                    errInst.errMessage = hb.compile(errInst.errMessage)(typeof opts.ctx === 'object' ? opts.ctx : {});
                     return stepDone(errInst);
                 }
             ], cb);
