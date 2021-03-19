@@ -6,7 +6,7 @@ const async = require('async');
 
 const DEFAULT_ERR = {
     "errCode": "default-err",
-    "errMessage": "Unknown Error. Contact System Admin",
+    "errMessage": "Unknown Error ({{_errCode}}). Contact System Admin.",
     "errCategory": "business",
     "moreInformation": "An unkown error has occurred. Please contact system administrator for help."
 };
@@ -28,7 +28,9 @@ module.exports = {
     },
     errorUtil: {
         chainErrOnCb: function chainErrOnCb(errCode, opts, options, cb) {
-            if (typeof opts !== 'object'); opts = { ctx: {} };
+            if (typeof opts !== 'object') opts = { ctx: {} };
+            if (typeof opts.ctx !== 'object') opts.ctx = {};
+            opts.ctx._errCode = errCode;
             let ErrorClass = miscUtils.lb.findModel('Error'), apiCtx = {};
             async.waterfall([
                 function findErrInst(stepDone) {
@@ -48,7 +50,7 @@ module.exports = {
                 function processMsg(stepDone) {
                     apiCtx.errInst.status = miscUtils.num(opts.status) || 422;
                     apiCtx.errInst.code = apiCtx.errInst.errCode;
-                    apiCtx.errInst.message = apiCtx.errInst.errMessage = miscUtils.hb.compile(apiCtx.errInst.errMessage)(typeof opts.ctx === 'object' ? opts.ctx : {});
+                    apiCtx.errInst.message = apiCtx.errInst.errMessage = miscUtils.hb.compile(apiCtx.errInst.errMessage)(opts.ctx);
                     return stepDone(apiCtx.errInst);
                 }
             ], cb);

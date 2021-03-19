@@ -24,6 +24,12 @@ module.exports = {
         }
     },
     num: number,
+    date: function date(inp) {
+        if (!(inp instanceof Date)) {
+            inp = new Date();
+        }
+        return inp;
+    },
     randomNum: function randomNum(len) {
         len = number(len);
         if (len < 1) {
