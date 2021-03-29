@@ -1,5 +1,5 @@
 {
-  "name": "oe-nsaichandra-utils",
+  "name": "@nsaichandra/oe-common-utils",
   "version": "0.0.26",
   "description": "A well defined useful set of utils on oe-apps packed as a pluggable app-module.",
   "author": "Sai Chandra Nandana",
