@@ -15,7 +15,16 @@ const cacheModules = {
         set: function nodeCacheSetter(key, value) {
             let self = this;
             self.init()
-            return Promise.resolve(self._cacheInstance.set.apply(self._cacheInstance, arguments));
+            try {
+                return Promise.resolve(self._cacheInstance.set.apply(self._cacheInstance, arguments));
+            } catch {
+                self.deleteCache().then(() => {
+                    log.info(log.defaultContext(), 'Max cache size reached and hence cleared total cache.');
+                }).catch(err => {
+                    log.info(log.defaultContext(), 'Max cache size reached : Error when clearing cache.' + ' : ' + err && err.message);
+                });
+                return Promise.resolve(null);
+            }
         },
         has: function nodeCacheSetter(key, value) {
             let self = this;
