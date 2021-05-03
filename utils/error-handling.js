@@ -27,33 +27,50 @@ module.exports = {
         }
     },
     errorUtil: {
-        chainErrOnCb: function chainErrOnCb(errCode, opts, options, cb) {
+        chainErrOnCb,
+        chainCustValidnErrOnCb: function chainCustValidnErrOnCb(errCode, opts, options, cb) {
             if (typeof opts !== 'object') opts = { ctx: {} };
             if (typeof opts.ctx !== 'object') opts.ctx = {};
-            opts.ctx._errCode = errCode;
-            let ErrorClass = miscUtils.lb.findModel('Error'), apiCtx = {};
-            async.waterfall([
-                function findErrInst(stepDone) {
-                    if (!errCode) return process.nextTick(stepDone);
-                    ErrorClass.findOne({ where: { errCode: errCode } }, options, (err, errInst) => {
-                        apiCtx.errInst = errInst;
-                        return stepDone(err);
-                    });
-                },
-                function checkForErrInst(stepDone) {
-                    if (apiCtx.errInst) return process.nextTick(stepDone);
-                    ErrorClass.findOne({ where: { errCode: 'default-err' } }, options, (err, errInst) => {
-                        apiCtx.errInst = errInst || new ErrorClass(DEFAULT_ERR);
-                        return stepDone(err);
-                    });
-                },
-                function processMsg(stepDone) {
-                    apiCtx.errInst.status = miscUtils.num(opts.status) || 422;
-                    apiCtx.errInst.code = apiCtx.errInst.errCode;
-                    apiCtx.errInst.message = apiCtx.errInst.errMessage = miscUtils.hb.compile(apiCtx.errInst.errMessage)(opts.ctx);
-                    return stepDone(apiCtx.errInst);
+            let hbCtx = opts.ctx;
+            chainErrOnCb(errCode, opts, options, err => {
+                if (err) {
+                    err.fieldName=hbCtx.name;
+                    err.errMessage=err.message;
+                    err.errCode=err.code;
                 }
-            ], cb);
+                cb(err);
+            })
         }
     }
+}
+
+
+function chainErrOnCb(errCode, opts, options, cb) {
+    if (typeof opts !== 'object') opts = { ctx: {} };
+    if (typeof opts.ctx !== 'object') opts.ctx = {};
+    let hbCtx = opts.ctx;
+    opts.ctx._errCode = errCode;
+    let ErrorClass = miscUtils.lb.findModel('Error'), apiCtx = {};
+    async.waterfall([
+        function findErrInst(stepDone) {
+            if (!errCode) return process.nextTick(stepDone);
+            ErrorClass.findOne({ where: { errCode: errCode } }, options, (err, errInst) => {
+                apiCtx.errInst = errInst;
+                return stepDone(err);
+            });
+        },
+        function checkForErrInst(stepDone) {
+            if (apiCtx.errInst) return process.nextTick(stepDone);
+            ErrorClass.findOne({ where: { errCode: 'default-err' } }, options, (err, errInst) => {
+                apiCtx.errInst = errInst || new ErrorClass(DEFAULT_ERR);
+                return stepDone(err);
+            });
+        },
+        function processMsg(stepDone) {
+            apiCtx.errInst.status = miscUtils.num(opts.status) || 422;
+            apiCtx.errInst.code = apiCtx.errInst.errCode;
+            apiCtx.errInst.message = apiCtx.errInst.errMessage = miscUtils.hb.compile(apiCtx.errInst.errMessage)(hbCtx);
+            return stepDone(apiCtx.errInst);
+        }
+    ], cb);
 }
